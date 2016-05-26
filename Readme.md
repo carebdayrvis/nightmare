@@ -33,8 +33,8 @@ var nightmare = Nightmare({ show: true })
 
 nightmare
   .goto('http://yahoo.com')
-  .type('input[title="Search"]', 'github nightmare')
-  .click('#uh-search-button')
+  .type('form[action*="/search"] [name=p]', 'github nightmare')
+  .click('form[action*="/search"] [type=submit]')
   .wait('#main')
   .evaluate(function () {
     return document.querySelector('#main .searchCenterMiddle li a').href
@@ -43,7 +43,9 @@ nightmare
   .then(function (result) {
     console.log(result)
   })
-
+  .catch(function (error) {
+    console.error('Search failed:', error);
+  });
 ```
 
 You can run this with:
@@ -64,8 +66,8 @@ describe('test yahoo search results', function() {
     var nightmare = Nightmare()
     var link = yield nightmare
       .goto('http://yahoo.com')
-      .type('input[title="Search"]', 'github nightmare')
-      .click('#UHSearchWeb')
+      .type('form[action*="/search"] [name=p]', 'github nightmare')
+      .click('form[action*="/search"] [type=submit]')
       .wait('#main')
       .evaluate(function () {
         return document.querySelector('#main .searchCenterMiddle li a').href
@@ -92,6 +94,9 @@ package for Mocha, which enables the support for generators.
 
 #### Nightmare(options)
 Create a new instance that can navigate around the web. The available options are [documented here](https://github.com/atom/electron/blob/master/docs/api/browser-window.md#new-browserwindowoptions), along with the following nightmare-specific options.
+
+#### Nightmare.version
+Returns the version of Nightmare.
 
 ##### waitTimeout (default: 30s)
 This will throw an exception if the `.wait()` didn't return `true` within the set timeframe.
@@ -156,6 +161,9 @@ var nightmare = Nightmare({
 });
 ```
 
+#### .engineVersions()
+Gets the versions for Electron and Chromium.
+
 #### .useragent(useragent)
 Set the `useragent` used by electron.
 
@@ -169,6 +177,23 @@ Complete any queue operations, disconnect and close the electron process.
 
 #### .goto(url[, headers])
 Load the page at `url`.  Optionally, a `headers` hash can be supplied to set headers on the `goto` request.
+
+When a page load is successful, `goto` returns an object with metadata about the page load, including:
+
+- `url`: The URL that was loaded
+- `code`: The HTTP status code (e.g. 200, 404, 500)
+- `method`: The HTTP method used (e.g. "GET", "POST")
+- `referrer`: The page that the window was displaying prior to this load or an empty string if this is the first page load.
+- `headers`: An object representing the response headers for the request as in `{header1-name: header1-value, header2-name: header2-value}`
+
+If the page load fails, the error will be an object wit the following properties:
+
+- `message`: A string describing the type of error
+- `code`: The underlying error code describing what went wrong. Note this is NOT the HTTP status code. For possible values, see https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+- `details`: A string with additional details about the error. This may be null or an empty string.
+- `url`: The URL that failed to load
+
+Note that any valid response from a server is considered “successful.” That means things like 404 “not found” errors are successful results for `goto`. Only things that would cause no page to appear in the browser window, such as no server responding at the given address, the server hanging up in the middle of a response, or invalid URLs, are errors.
 
 #### .back()
 Go back to the previous page.
@@ -190,7 +215,7 @@ Enters the `text` provided into the `selector` element.  Empty or falsey values 
 
 `.type()` mimics a user typing in a textbox and will emit the proper keyboard events
 
-Key presses can also be fired using Unicode values with `.type()`. For example, if you wanted to fire an enter key press, you would  write `.type('document', '\u000d')`. 
+Key presses can also be fired using Unicode values with `.type()`. For example, if you wanted to fire an enter key press, you would  write `.type('document', '\u000d')`.
 
 > If you don't need the keyboard events, consider using `.insert()` instead as it will be faster and more robust.
 
@@ -418,25 +443,23 @@ var background = yield Nightmare()
 You can also add custom Electron actions.  The additional Electron action or namespace actions take `name`, `options`, `parent`, `win`, `renderer`, and `done`.  Note the Electron action comes first, mirroring how `.evaluate()` works.  For example:
 
 ```javascript
-Nightmare.action('echo',
+Nightmare.action('clearCache',
   function(name, options, parent, win, renderer, done) {
-    parent.on('echo', function(message) {
-      parent.emit('log', 'echo: ' + message);
+    parent.respondTo('clearCache', function(done) {
+      win.webContents.session.clearCache(done);
     });
     done();
   },
   function(message, done) {
-    this.child.emit('echo', message);
-    done();
-    return this;
+    this.child.call('clearCache', done);
   });
 
 yield Nightmare()
-  .goto('http://example.org')
-  .echo('hello there!');
+  .clearCache()
+  .goto('http://example.org');
 ```
 
-...would have a `nightmare:log` showing "hello there!" when run with `DEBUG=nightmare*`.
+...would clear the browser’s cache before navigating to `example.org`.
 
 #### .use(plugin)
 

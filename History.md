@@ -1,3 +1,43 @@
+2.4.1 / 2016-05-19
+==================
+
+  * Points invalid test URLs to the `.tld` domain
+  * Switches javascript templates over to using template strings.
+  * Adds better switch tests
+  * Javascript `goto`s now only wait if the main frame is loading
+  * Allows a Nightmare instance to use `.catch()` without a `.then()`
+  * Fixes a deprecated IPC inclusion in tests
+  * `.goto()` rejects with a helpful message when `url` is not provided
+
+2.4.0 / 2016-05-05
+==================
+
+  * adds call safety with IPC callbacks
+  * adds `.engineVersions()` to get Electron and Chrome versions, as well as Nightmare.version
+  * changes Yahoo example to use more robust selectors, adds `.catch()`
+  * adds a check for `runner` arguments
+
+2.3.4 / 2016-04-23
+==================
+
+  * blurs text inputs when finished with `.type()` or `.input()`, including clearing selectors
+  * now errors properly for non-existent selectors when using `.type()` and `.input()`
+  * strips `sender` from Electron -> parent process forwarded events
+  * improves test speed for dev tools
+  * fixes `.then()` to comply with A+ promises
+  * pipes Electron output to `debug` prefixed with `electron:`
+  * cleans up several exception test cases using `.should.be.rejected` from `chai-as-promised`
+  * upgrades to Electron 0.37.7
+  * removes `process` event listeners when a Nightmare instance ends
+  * fixes support for `javascript:` urls
+
+2.3.3 / 2016-04-19
+==================
+
+  * fixes `.goto()` failing when the page does not load
+  * fixes deprecated Electron APIs
+  * adds testing for deprecated API usage in Electron
+
 2.3.2 / 2016-04-14
 ==================
 
